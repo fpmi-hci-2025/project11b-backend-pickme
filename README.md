@@ -8,8 +8,6 @@ Backend API для социальной сети PickMe с гибкой прив
 - Django 5.1
 - Django REST Framework
 - PostgreSQL
-- Redis
-- Celery
 - Docker
 
 ## Локальный запуск
@@ -74,4 +72,3 @@ pytest --cov=apps --cov-report=html
 ## Лицензия
 
 MIT
-

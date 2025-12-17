@@ -16,5 +16,3 @@ pytest-cov==6.0.0
 factory-boy==3.3.1
 Faker==33.1.0
 drf-spectacular==0.28.0
-redis==5.2.1
-celery==5.4.0

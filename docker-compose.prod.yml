@@ -16,15 +16,6 @@ services:
       retries: 5
     restart: always
 
-  redis:
-    image: redis:7-alpine
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    restart: always
-
   backend:
     image: ${DOCKER_REGISTRY}/pickme-backend:${IMAGE_TAG:-latest}
     command: >
@@ -42,7 +33,6 @@ services:
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
-      - CELERY_BROKER_URL=redis://redis:6379/0
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
       - USE_S3=${USE_S3:-False}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
@@ -54,26 +44,6 @@ services:
       - SUPERUSER_PASSWORD=${SUPERUSER_PASSWORD}
     depends_on:
       db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: always
-
-  celery:
-    image: ${DOCKER_REGISTRY}/pickme-backend:${IMAGE_TAG:-latest}
-    command: celery -A pickme worker -l info
-    environment:
-      - DEBUG=False
-      - SECRET_KEY=${SECRET_KEY}
-      - DB_HOST=db
-      - DB_NAME=${DB_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - CELERY_BROKER_URL=redis://redis:6379/0
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
         condition: service_healthy
     restart: always
 

@@ -17,16 +17,6 @@ services:
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   backend:
     build: .
     command: >
@@ -45,34 +35,11 @@ services:
       - DB_NAME=pickme
       - DB_USER=pickme
       - DB_PASSWORD=pickme
-      - CELERY_BROKER_URL=redis://redis:6379/0
       - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
     depends_on:
       db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
-  celery:
-    build: .
-    command: celery -A pickme worker -l info
-    volumes:
-      - .:/app
-    environment:
-      - DEBUG=True
-      - SECRET_KEY=dev-secret-key-change-in-production
-      - DB_HOST=db
-      - DB_NAME=pickme
-      - DB_USER=pickme
-      - DB_PASSWORD=pickme
-      - CELERY_BROKER_URL=redis://redis:6379/0
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
         condition: service_healthy
 
 volumes:
   postgres_data:
   media_data:
-

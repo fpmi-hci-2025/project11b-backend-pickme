@@ -123,7 +123,7 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd /opt/pickme
-            docker-compose -f docker-compose.prod.yml pull backend celery
-            docker-compose -f docker-compose.prod.yml up -d --no-deps backend celery
+            docker-compose -f docker-compose.prod.yml pull backend
+            docker-compose -f docker-compose.prod.yml up -d --no-deps backend
             docker system prune -f
 
