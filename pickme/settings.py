@@ -84,6 +84,11 @@ else:
         }
     }
 
+# SSL mode for managed PostgreSQL (Yandex Cloud requires SSL)
+db_sslmode = os.getenv('DB_SSLMODE', '')
+if db_sslmode:
+    DATABASES['default']['OPTIONS'] = {'sslmode': db_sslmode}
+
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
