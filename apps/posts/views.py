@@ -6,6 +6,7 @@ from django.db.models import Q, Count
 
 from .models import Post, Like
 from .serializers import PostSerializer, PostCreateSerializer, PostUpdateSerializer
+from apps.users.serializers import UserSearchSerializer
 
 User = get_user_model()
 
@@ -132,6 +133,10 @@ class PostLikeView(APIView):
         except Post.DoesNotExist:
             return None
 
+    def get_liked_by(self, post):
+        likes = post.likes.select_related('user').order_by('-created_at')
+        return [UserSearchSerializer(like.user).data for like in likes]
+
     def post(self, request, pk):
         """Like a post"""
         post = self.get_post(pk)
@@ -142,16 +147,11 @@ class PostLikeView(APIView):
             )
 
         like, created = Like.objects.get_or_create(user=request.user, post=post)
-        if not created:
-            return Response(
-                {'detail': 'Post already liked', 'likes_count': post.likes.count()},
-                status=status.HTTP_200_OK
-            )
-
-        return Response(
-            {'detail': 'Post liked', 'likes_count': post.likes.count()},
-            status=status.HTTP_201_CREATED
-        )
+        return Response({
+            'detail': 'Post liked' if created else 'Post already liked',
+            'likes_count': post.likes.count(),
+            'liked_by': self.get_liked_by(post),
+        }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
     def delete(self, request, pk):
         """Unlike a post"""
@@ -163,13 +163,8 @@ class PostLikeView(APIView):
             )
 
         deleted, _ = Like.objects.filter(user=request.user, post=post).delete()
-        if not deleted:
-            return Response(
-                {'detail': 'Post was not liked', 'likes_count': post.likes.count()},
-                status=status.HTTP_200_OK
-            )
-
-        return Response(
-            {'detail': 'Like removed', 'likes_count': post.likes.count()},
-            status=status.HTTP_200_OK
-        )
+        return Response({
+            'detail': 'Like removed' if deleted else 'Post was not liked',
+            'likes_count': post.likes.count(),
+            'liked_by': self.get_liked_by(post),
+        }, status=status.HTTP_200_OK)

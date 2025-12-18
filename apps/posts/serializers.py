@@ -130,12 +130,24 @@ class PostUpdateSerializer(serializers.ModelSerializer):
         return instance
 
 
+class LikeUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Like
+        fields = ('id', 'created_at')
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['user'] = UserSearchSerializer(instance.user).data
+        return data
+
+
 class PostSerializer(serializers.ModelSerializer):
     author = UserSearchSerializer(read_only=True)
     audience_groups_detail = serializers.SerializerMethodField()
     is_own = serializers.SerializerMethodField()
     likes_count = serializers.SerializerMethodField()
     is_liked = serializers.SerializerMethodField()
+    liked_by = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
@@ -143,7 +155,7 @@ class PostSerializer(serializers.ModelSerializer):
             'id', 'author', 'content_type', 'text_content', 'media_file',
             'media_url', 'media_type', 'audience_type', 'audience_groups',
             'audience_groups_detail', 'is_own', 'likes_count', 'is_liked',
-            'created_at', 'updated_at'
+            'liked_by', 'created_at', 'updated_at'
         )
 
     def get_audience_groups_detail(self, obj):
@@ -163,3 +175,7 @@ class PostSerializer(serializers.ModelSerializer):
         if request and request.user.is_authenticated:
             return obj.likes.filter(user=request.user).exists()
         return False
+
+    def get_liked_by(self, obj):
+        likes = obj.likes.select_related('user').order_by('-created_at')
+        return [UserSearchSerializer(like.user).data for like in likes]
