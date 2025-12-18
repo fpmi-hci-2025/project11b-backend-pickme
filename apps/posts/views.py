@@ -73,7 +73,12 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
                 {'detail': 'You can only edit your own posts'},
                 status=status.HTTP_403_FORBIDDEN
             )
-        return super().update(request, *args, **kwargs)
+        partial = kwargs.pop('partial', False)
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        response_serializer = PostSerializer(instance, context={'request': request})
+        return Response(response_serializer.data)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
