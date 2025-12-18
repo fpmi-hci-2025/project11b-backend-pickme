@@ -1,9 +1,10 @@
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from django.contrib.auth import get_user_model
-from django.db.models import Q
+from django.db.models import Q, Count
 
-from .models import Post
+from .models import Post, Like
 from .serializers import PostSerializer, PostCreateSerializer, PostUpdateSerializer
 
 User = get_user_model()
@@ -115,5 +116,60 @@ class UserPostsView(generics.ListAPIView):
                 )
             )
         ).distinct()
-        
+
         return queryset
+
+
+class PostLikeView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_post(self, pk):
+        try:
+            post = Post.objects.get(pk=pk)
+            if not post.can_view(self.request.user):
+                return None
+            return post
+        except Post.DoesNotExist:
+            return None
+
+    def post(self, request, pk):
+        """Like a post"""
+        post = self.get_post(pk)
+        if not post:
+            return Response(
+                {'detail': 'Post not found or access denied'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        like, created = Like.objects.get_or_create(user=request.user, post=post)
+        if not created:
+            return Response(
+                {'detail': 'Post already liked', 'likes_count': post.likes.count()},
+                status=status.HTTP_200_OK
+            )
+
+        return Response(
+            {'detail': 'Post liked', 'likes_count': post.likes.count()},
+            status=status.HTTP_201_CREATED
+        )
+
+    def delete(self, request, pk):
+        """Unlike a post"""
+        post = self.get_post(pk)
+        if not post:
+            return Response(
+                {'detail': 'Post not found or access denied'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        deleted, _ = Like.objects.filter(user=request.user, post=post).delete()
+        if not deleted:
+            return Response(
+                {'detail': 'Post was not liked', 'likes_count': post.likes.count()},
+                status=status.HTTP_200_OK
+            )
+
+        return Response(
+            {'detail': 'Like removed', 'likes_count': post.likes.count()},
+            status=status.HTTP_200_OK
+        )

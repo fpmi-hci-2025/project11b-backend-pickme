@@ -65,15 +65,36 @@ class Post(models.Model):
         """Check if user can view this post"""
         if self.author == user:
             return True
-        
+
         if self.audience_type == self.AudienceType.ONLY_ME:
             return False
-        
+
         if self.audience_type == self.AudienceType.EVERYONE:
             return True
-        
+
         if self.audience_type == self.AudienceType.GROUPS:
-            # Check if user is in any of the audience groups
             return self.audience_groups.filter(members=user).exists()
-        
+
         return False
+
+
+class Like(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='likes'
+    )
+    post = models.ForeignKey(
+        Post,
+        on_delete=models.CASCADE,
+        related_name='likes'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'likes'
+        unique_together = ('user', 'post')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} liked post {self.post.id}"

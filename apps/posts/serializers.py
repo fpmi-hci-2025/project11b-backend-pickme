@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Post
+from .models import Post, Like
 from apps.users.serializers import UserSearchSerializer
 from apps.groups.models import FriendGroup
 
@@ -134,13 +134,16 @@ class PostSerializer(serializers.ModelSerializer):
     author = UserSearchSerializer(read_only=True)
     audience_groups_detail = serializers.SerializerMethodField()
     is_own = serializers.SerializerMethodField()
+    likes_count = serializers.SerializerMethodField()
+    is_liked = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
         fields = (
             'id', 'author', 'content_type', 'text_content', 'media_file',
             'media_url', 'media_type', 'audience_type', 'audience_groups',
-            'audience_groups_detail', 'is_own', 'created_at', 'updated_at'
+            'audience_groups_detail', 'is_own', 'likes_count', 'is_liked',
+            'created_at', 'updated_at'
         )
 
     def get_audience_groups_detail(self, obj):
@@ -150,4 +153,13 @@ class PostSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             return obj.author == request.user
+        return False
+
+    def get_likes_count(self, obj):
+        return obj.likes.count()
+
+    def get_is_liked(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.likes.filter(user=request.user).exists()
         return False
